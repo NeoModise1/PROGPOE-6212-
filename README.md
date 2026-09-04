@@ -57,3 +57,6 @@ and results — not those of other users.
 | `sql/insert_data.sql` | Sample seed data for testing |
 | `RaceDay_API_Endpoint_Plan.md` | Full REST API endpoint plan, grouped by feature area |
 | `.github/workflows/validate-raceday.yml` | CI workflow that checks required files exist and validates the SQL scripts run successfully |
+
+<img width="736" height="632" alt="image" src="https://github.com/user-attachments/assets/b2f7d392-6b69-43e5-9d68-7bc1fcf5e19d" />
+
