@@ -1,11 +1,9 @@
 name: Validate RaceDay Repo
-
 # Runs on every push and pull request.
-# Job 1 checks that required files exist (README, Schema.sql, docs).
+# Job 1 checks that required files exist (README, schema.sql, docs).
 # Job 2 spins up a real SQL Server container and runs schema.sql against
 # it, so "SQL structure is correct" is actually proven by executing it,
 # not just guessed at.
-
 on:
   push:
   pull_request:
@@ -24,9 +22,8 @@ jobs:
           # EDIT THIS LIST to match your repo's actual file names/paths.
           required_files=(
             "README.md"
-            "Schema.sql"
+            "schema.sql"
           )
-
           missing=0
           for f in "${required_files[@]}"; do
             if [ ! -f "$f" ]; then
@@ -36,7 +33,6 @@ jobs:
               echo "✔ Found: $f"
             fi
           done
-
           if [ "$missing" -eq 1 ]; then
             echo "::error::One or more required files are missing."
             exit 1
@@ -54,7 +50,6 @@ jobs:
           MSSQL_SA_PASSWORD: "YourStrong!Passw0rd1"
         ports:
           - 1433:1433
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -86,12 +81,12 @@ jobs:
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
             -Q "IF DB_ID('RaceDayTest') IS NULL CREATE DATABASE RaceDayTest;"
 
-      - name: Run Schema.sql (structure + data check)
+      - name: Run schema.sql (structure + data check)
         shell: bash
         run: |
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
             -d RaceDayTest -i schema.sql -b
-          echo "✔ Schema.sql ran without error."
+          echo "✔ schema.sql ran without error."
 
       - name: Sanity-check row counts
         shell: bash
