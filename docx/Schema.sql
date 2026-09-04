@@ -256,7 +256,7 @@ VALUES
     'KwaZulu-Natal',
     'Scheduled'
 );
-GO
+
 
 INSERT INTO dbo.CATEGORIES
 (
@@ -290,7 +290,7 @@ VALUES
     'Walking',
     'A recreational five kilometre walking category.'
 );
-GO
+
 
 INSERT INTO dbo.EVENT_CATEGORIES
 (
@@ -355,7 +355,7 @@ VALUES
     'DBN-001',
     'Registered'
 );
-GO
+
 
 INSERT INTO dbo.ENROLLMENTS
 (
@@ -389,7 +389,7 @@ VALUES
     '2026-08-28 11:05:00',
     'Registered'
 );
-GO
+
 
 INSERT INTO dbo.RESULTS
 (
@@ -414,7 +414,7 @@ VALUES
     5.13,
     'Completed'
 );
-GO
+
 
 INSERT INTO dbo.ROUTES
 (
@@ -458,7 +458,7 @@ VALUES
     'Flat beachfront route with a fast finish.',
     'https://maps.example.com/raceday/durban-summer'
 );
-GO
+
 
 
 INSERT INTO dbo.WEATHER_INFORMATION
@@ -503,4 +503,4 @@ VALUES
     70.00,
     '2026-12-06 05:30:00'
 );
-GO
+
