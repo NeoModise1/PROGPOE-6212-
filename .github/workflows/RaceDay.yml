@@ -1,59 +1,109 @@
-# RaceDay
+name: Validate RaceDay Repo
 
-## Overview
+# Runs on every push and pull request.
+# Job 1 checks that required files exist (README, Schema.sql, docs).
+# Job 2 spins up a real SQL Server container and runs schema.sql against
+# it, so "SQL structure is correct" is actually proven by executing it,
+# not just guessed at.
 
-RaceDay is a database-backed event management system for organising and
-participating in running and walking events (e.g. fun runs, road races,
-half marathons, and walks). It allows event organisers to publish events,
-attach race categories with their own entry fees and capacity limits,
-and manage participant registrations, race-day results, routes, and
-weather conditions. Participants can browse upcoming events, enrol in a
-specific category (e.g. "the 10km at the Johannesburg City Challenge"),
-and view their own registration history and results.
+on:
+  push:
+  pull_request:
 
-The system is built around a nine-entity relational schema (Users,
-Events, Categories, EventCategories, UserEvents, Enrollments, Results,
-Routes, and WeatherInformation) and is exposed through a RESTful API
-implemented in C#.
+jobs:
+  check-files:
+    name: Check required files exist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-## Roles
+      - name: Verify required files
+        shell: bash
+        run: |
+          # EDIT THIS LIST to match your repo's actual file names/paths.
+          required_files=(
+            "README.md"
+            "Schema.sql"
+          )
 
-RaceDay has two user roles, both stored on the `USERS` table via the
-`Role` field:
+          missing=0
+          for f in "${required_files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing required file: $f"
+              missing=1
+            else
+              echo "✔ Found: $f"
+            fi
+          done
 
-### Organiser
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::One or more required files are missing."
+            exit 1
+          fi
 
-Organisers create and manage events. They can:
-- Create, update, and delete events
-- Attach race categories to an event with a specific entry fee and
-  maximum participant count
-- Add and manage routes and weather information for their events
-- Review who has registered and enrolled in their events
-- Assign race numbers and update registration status
-- Capture finish times, positions, and results after a race
+  validate-sql:
+    name: Validate SQL structure
+    runs-on: ubuntu-latest
+    needs: check-files
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "YourStrong!Passw0rd1"
+        ports:
+          - 1433:1433
 
-Organisers can only manage the events they created — actions on events,
-categories, routes, and results are restricted to the owning organiser.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-### Participant
+      - name: Install sqlcmd
+        shell: bash
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          curl -sSL https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+          echo "/opt/mssql-tools18/bin" >> "$GITHUB_PATH"
 
-Participants register for and take part in events. They can:
-- Browse all published events and their category offerings
-- Enrol in a specific event category (which also registers them for the
-  event overall and issues a race number)
-- View their own registrations, enrolments, and history
-- Cancel their own enrolments
-- View their own personal results across past events
+      - name: Wait for SQL Server to be ready
+        shell: bash
+        run: |
+          for i in {1..30}; do
+            if /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C -Q "SELECT 1" > /dev/null 2>&1; then
+              echo "SQL Server is ready."
+              break
+            fi
+            echo "Waiting for SQL Server... ($i)"
+            sleep 3
+          done
 
-Participants can only view and manage their own registrations, enrolments,
-and results — not those of other users.
+      - name: Create test database
+        shell: bash
+        run: |
+          sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
+            -Q "IF DB_ID('RaceDayTest') IS NULL CREATE DATABASE RaceDayTest;"
 
-## Repository Contents
+      - name: Run Schema.sql (structure + data check)
+        shell: bash
+        run: |
+          sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
+            -d RaceDayTest -i schema.sql -b
+          echo "✔ Schema.sql ran without error."
 
-| File | Description |
-|---|---|
-| `ERD_.pdf` | Entity Relationship Diagram for the RaceDay database |
-| `sql/create_tables.sql` | Schema — creates all nine tables with keys and constraints |
-| `sql/insert_data.sql` | Sample seed data for testing |
-| `RaceDay_API_Endpoint_Plan.md` | Full REST API endpoint plan, grouped by feature area |
-| `.github/workflows/validate-raceday.yml` | CI workflow that checks required files exist and validates the SQL scripts run successfully |
+      - name: Sanity-check row counts
+        shell: bash
+        run: |
+          sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C -d RaceDayTest -b -Q "
+            SELECT 'USERS' AS TableName, COUNT(*) AS Rows FROM dbo.USERS
+            UNION ALL SELECT 'EVENTS', COUNT(*) FROM dbo.EVENTS
+            UNION ALL SELECT 'CATEGORIES', COUNT(*) FROM dbo.CATEGORIES
+            UNION ALL SELECT 'EVENT_CATEGORIES', COUNT(*) FROM dbo.EVENT_CATEGORIES
+            UNION ALL SELECT 'USER_EVENTS', COUNT(*) FROM dbo.USER_EVENTS
+            UNION ALL SELECT 'ENROLLMENTS', COUNT(*) FROM dbo.ENROLLMENTS
+            UNION ALL SELECT 'RESULTS', COUNT(*) FROM dbo.RESULTS
+            UNION ALL SELECT 'ROUTES', COUNT(*) FROM dbo.ROUTES
+            UNION ALL SELECT 'WEATHER_INFORMATION', COUNT(*) FROM dbo.WEATHER_INFORMATION;
+          "
