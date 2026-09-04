@@ -212,7 +212,7 @@ VALUES
     '0855550104',
     'Participant'
 );
-GO
+
 
 INSERT INTO dbo.EVENTS
 (
