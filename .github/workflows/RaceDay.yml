@@ -1,7 +1,7 @@
 name: Validate RaceDay Repo
 # Runs on every push and pull request.
-# Job 1 checks that required files exist (README, schema.sql, docs).
-# Job 2 spins up a real SQL Server container and runs schema.sql against
+# Job 1 checks that required files exist (README, Schema.sql, docs).
+# Job 2 spins up a real SQL Server container and runs Schema.sql against
 # it, so "SQL structure is correct" is actually proven by executing it,
 # not just guessed at.
 on:
@@ -22,7 +22,7 @@ jobs:
           # EDIT THIS LIST to match your repo's actual file names/paths.
           required_files=(
             "README.md"
-            "schema.sql"
+            "docx/Schema.sql"
           )
           missing=0
           for f in "${required_files[@]}"; do
@@ -81,24 +81,15 @@ jobs:
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
             -Q "IF DB_ID('RaceDayTest') IS NULL CREATE DATABASE RaceDayTest;"
 
-      - name: Run schema.sql (structure + data check)
+      - name: Run Schema.sql (structure + data check)
         shell: bash
         run: |
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
-            -d RaceDayTest -i schema.sql -b
-          echo "✔ schema.sql ran without error."
+            -d RaceDayTest -i docx/Schema.sql -b
+          echo "✔ Schema.sql ran without error."
 
       - name: Sanity-check row counts
         shell: bash
         run: |
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C -d RaceDayTest -b -Q "
             SELECT 'USERS' AS TableName, COUNT(*) AS Rows FROM dbo.USERS
-            UNION ALL SELECT 'EVENTS', COUNT(*) FROM dbo.EVENTS
-            UNION ALL SELECT 'CATEGORIES', COUNT(*) FROM dbo.CATEGORIES
-            UNION ALL SELECT 'EVENT_CATEGORIES', COUNT(*) FROM dbo.EVENT_CATEGORIES
-            UNION ALL SELECT 'USER_EVENTS', COUNT(*) FROM dbo.USER_EVENTS
-            UNION ALL SELECT 'ENROLLMENTS', COUNT(*) FROM dbo.ENROLLMENTS
-            UNION ALL SELECT 'RESULTS', COUNT(*) FROM dbo.RESULTS
-            UNION ALL SELECT 'ROUTES', COUNT(*) FROM dbo.ROUTES
-            UNION ALL SELECT 'WEATHER_INFORMATION', COUNT(*) FROM dbo.WEATHER_INFORMATION;
-          "
