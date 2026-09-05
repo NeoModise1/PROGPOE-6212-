@@ -1,25 +1,17 @@
 name: Validate RaceDay Repo
-# Runs on every push and pull request.
-# Job 1 checks that required files exist (README, Schema.sql, docs).
-# Job 2 spins up a real SQL Server container and runs Schema.sql against
-# it, so "SQL structure is correct" is actually proven by executing it,
-# not just guessed at.
 on:
   push:
   pull_request:
-
 jobs:
   check-files:
-    name: Check required files exist
+    Name: Check required files exist
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Verify required files
         shell: bash
         run: |
-          # EDIT THIS LIST to match your repo's actual file names/paths.
           required_files=(
             "README.md"
             "docx/Schema.sql"
@@ -37,8 +29,7 @@ jobs:
             echo "::error::One or more required files are missing."
             exit 1
           fi
-
-  validate-sql:
+  validate-Sql:
     name: Validate SQL structure
     runs-on: ubuntu-latest
     needs: check-files
@@ -53,7 +44,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install sqlcmd
         shell: bash
         run: |
@@ -62,7 +52,6 @@ jobs:
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
           echo "/opt/mssql-tools18/bin" >> "$GITHUB_PATH"
-
       - name: Wait for SQL Server to be ready
         shell: bash
         run: |
@@ -74,20 +63,17 @@ jobs:
             echo "Waiting for SQL Server... ($i)"
             sleep 3
           done
-
       - name: Create test database
         shell: bash
         run: |
-          sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
+          sqlcmd -S localhost -U sa -P 'YourStrong!Password1' -C \
             -Q "IF DB_ID('RaceDays') IS NULL CREATE DATABASE RaceDays;"
-
       - name: Run Schema.sql (structure + data check)
         shell: bash
         run: |
           sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd1' -C \
             -d RaceDays -i docx/Schema.sql -b
           echo "✔ Schema.sql ran without error."
-
       - name: Sanity-check row counts
         shell: bash
         run: |
