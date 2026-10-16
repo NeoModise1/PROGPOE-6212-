@@ -1,11 +1,28 @@
-# RaceDay API (PROG6212 POE - Part 2)
+# RaceDay PROG6212 POE - Parts 1&2
+
+RaceDay is an event management system for race events. This repository contains both parts of the POE:
+
+| Part | What it covers | Where it lives |
+|------|----------------|----------------|
+| **Part 1 - Design** | Endpoint plan, ERD and SQL schema | `schema.sql`, plus the Part 1 documents linked below |
+| **Part 2 - Implementation** | ASP.NET Core 8 Web API built to the Part 1 endpoint plan and ERD, with unit tests and CI | `RaceDay/` |
+
+## Part 1 - Design
+
+Part 1 defines what Part 2 implements.
+
+- **ERD:** _add link or image path here_
+- **Endpoint plan:** _add link or document path here_
+- **SQL schema:** `schema.sql` contains the database schema derived from the ERD.
+
+## Part 2 - RaceDay API
 
 ASP.NET Core 8 Web API for the RaceDay event management system, built to the Part 1 endpoint plan and ERD.
 
 - **Stack:** ASP.NET Core Web API (C#), Entity Framework Core (Code-First) + SQL Server, JWT authentication, Swagger UI, xUnit tests, GitHub Actions CI.
 - **Roles:** `Organiser` and `Participant` (role-based access enforced with `[Authorize(Roles = ...)]` plus ownership checks).
 
-## Roles
+### Roles
 
 | Role | Can do |
 |------|--------|
@@ -15,35 +32,40 @@ ASP.NET Core 8 Web API for the RaceDay event management system, built to the Par
 
 Any endpoint a role is not allowed to use returns **403 Forbidden**; missing/invalid token returns **401 Unauthorized**.
 
-## Prerequisites
+### Prerequisites
 
 - .NET 8 SDK (or newer SDK; the projects target `net8.0`)
 - SQL Server LocalDB (installed with Visual Studio) or any SQL Server instance
 
-## Setup and run
+### Setup and run
 
-1. Open `RaceDay.sln` in Visual Studio (or use the CLI below).
-2. Check the connection string in `src/RaceDay.Api/appsettings.json` (`ConnectionStrings:DefaultConnection`). The default uses LocalDB:
+The solution lives in the `RaceDay/` folder, so run the commands below from there.
+
+1. Open `RaceDay/RaceDay.sln` in Visual Studio (or use the CLI below).
+2. Check the connection string in `RaceDay/src/RaceDay.Api/appsettings.json` (`ConnectionStrings:DefaultConnection`). The default uses LocalDB:
    `Server=(localdb)\MSSQLLocalDB;Database=RaceDayDb;Trusted_Connection=True;TrustServerCertificate=True`
 3. Run:
    ```bash
+   cd RaceDay
    dotnet restore
    dotnet run --project src/RaceDay.Api
    ```
 4. Open **http://localhost:5080** - Swagger UI loads at the site root.
 
-The database schema is created automatically on first start (Code-First, matches the ERD) and the master `Categories` list is seeded.
+The database schema is created automatically on first start (Code-First, matches the ERD) and the master `Categories` list is seeded. `schema.sql` from Part 1 describes the same schema.
 
-> Prefer migrations? Run `dotnet ef migrations add InitialCreate --project src/RaceDay.Api` and replace
+> Prefer migrations? From `RaceDay/`, run `dotnet ef migrations add InitialCreate --project src/RaceDay.Api` and replace
 > `db.Database.EnsureCreated()` in `Program.cs` with `db.Database.Migrate()`.
 
-### Using Swagger with authentication
+#### Using Swagger with authentication
 
 1. `POST /api/auth/register` (choose role `Organiser` or `Participant`).
 2. `POST /api/auth/login` and copy the `token` from the response.
 3. Click **Authorize** (top right), paste the token, and test the protected endpoints.
 
-## Running the unit tests
+### Running the unit tests
+
+From `RaceDay/`:
 
 ```bash
 dotnet test
@@ -51,35 +73,40 @@ dotnet test
 
 Tests use the real API in memory (`WebApplicationFactory`) with an isolated EF Core in-memory database, and cover authenticated and unauthenticated requests, success and failure cases, and role enforcement for: registration/login, user profile, events, categories, event categories, enrolments, registrations, results, routes and weather, plus Swagger generation.
 
+### Endpoints (from the Part 1 plan)
+
+Authentication, User Profile, Events, Categories, Event Categories, Enrollments, User Events (registrations), Results, Routes and Weather Information - all endpoints in the plan are implemented and visible in Swagger with descriptions, request bodies and responses.
+
 ## CI/CD
 
-`.github/workflows/ci.yml` builds the solution and runs all tests on every push and pull request.
+`.github/workflows/raceday.yml` runs on every push and pull request (and can be started manually from the Actions tab). It has two jobs:
 
-> If you place this project in a **subfolder** of your GitHub repository, move `.github/workflows/ci.yml` to the repository root `.github/workflows/` and prefix the paths, e.g. `dotnet test <subfolder>/RaceDay.sln`.
+1. **Check required files exist** - confirms `README.md`, `schema.sql` and `RaceDay.sln` are present.
+2. **Build and test** - restores, builds (Release) and runs all tests for `RaceDay/RaceDay.sln` on .NET 8.
 
-**CI screenshot (green build):** _add screenshot here_
+**CI screenshot (green build):** <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/65f285eb-a701-41d9-9c44-463e2d81d5f8" />
+
 
 ## Demo video
 
 **YouTube (unlisted):** _add link here_
 
-## Project structure
+## Repository structure
 
 ```
-RaceDay.sln
-src/RaceDay.Api/
-  Controllers/   one controller per area of the endpoint plan
-  Models/        EF Core entities (match the ERD)
-  Data/          DbContext, relationships, seed data
-  Dtos/          request/response models and mapping
-  Services/      password hashing (PBKDF2) and JWT creation
-Tests: tests/RaceDay.Tests/
-.github/workflows/ci.yml
+README.md
+schema.sql                      Part 1 - SQL schema
+.github/workflows/raceday.yml   CI workflow
+RaceDay/
+  RaceDay.sln
+  src/RaceDay.Api/
+    Controllers/   one controller per area of the endpoint plan
+    Models/        EF Core entities (match the ERD)
+    Data/          DbContext, relationships, seed data
+    Dtos/          request/response models and mapping
+    Services/      password hashing (PBKDF2) and JWT creation
+  tests/RaceDay.Tests/          xUnit tests
 ```
-
-## Endpoints (from the Part 1 plan)
-
-Authentication, User Profile, Events, Categories, Event Categories, Enrollments, User Events (registrations), Results, Routes and Weather Information - all endpoints in the plan are implemented and visible in Swagger with descriptions, request bodies and responses.
 
 ## Notes / design decisions
 
