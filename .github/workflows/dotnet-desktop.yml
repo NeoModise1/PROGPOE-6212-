@@ -1,4 +1,4 @@
-name: RaceDay 
+name: RaceDay
 
 on:
   push:
@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [ "**" ]
 
+permissions:
+  contents: read
+
 jobs:
   check-files:
-    Name: Check required files exist
+    name: Check required files exist
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Verify required files
         shell: bash
         run: |
@@ -33,7 +37,9 @@ jobs:
             echo "::error::One or more required files are missing."
             exit 1
           fi
+
   build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
