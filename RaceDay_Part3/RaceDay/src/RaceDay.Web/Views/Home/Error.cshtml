@@ -1,0 +1,21 @@
+@model ErrorViewModel
+@{
+    var code = ViewData["Code"] as int?;
+    ViewData["Title"] = code == 404 ? "Page not found" : "Something went wrong";
+}
+<div class="auth-wrap text-center">
+    <div class="rd-panel">
+        <div class="display-3 text-warning"><i class="bi bi-cone-striped"></i></div>
+        <h1>@(code == 404 ? "Wrong turn" : "Something went wrong")</h1>
+        <p class="text-muted">
+            @(code == 404
+                ? "We couldn't find the page you were looking for."
+                : "An unexpected problem occurred. Please try again - if it keeps happening, let us know.")
+        </p>
+        <a class="btn btn-rd" asp-controller="Home" asp-action="Index">Back to events</a>
+        @if (!string.IsNullOrEmpty(Model.RequestId))
+        {
+            <p class="small text-muted mt-3 mb-0">Reference: @Model.RequestId</p>
+        }
+    </div>
+</div>

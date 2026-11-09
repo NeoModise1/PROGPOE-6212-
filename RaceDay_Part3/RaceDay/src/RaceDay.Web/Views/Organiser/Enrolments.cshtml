@@ -1,0 +1,71 @@
+@model EnrolmentsViewModel
+@{ ViewData["Title"] = "Enrolments - " + Model.Event.EventName; }
+
+<div class="page-head">
+    <div>
+        <h1>Enrolments</h1>
+        <p><strong>@Model.Event.EventName</strong> &middot; @Model.Event.EventDate.ToString("d MMM yyyy") &middot; @Model.Rows.Count enrolled</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-rd-outline" asp-action="Results" asp-route-eventId="@Model.Event.EventId"><i class="bi bi-stopwatch"></i> Enter results</a>
+        <a class="btn btn-rd-outline" asp-action="Events">Back</a>
+    </div>
+</div>
+
+<p class="legend small text-muted">
+    <span class="status-badge status-amber">Registered</span> awaiting confirmation
+    <span class="status-badge status-green">Confirmed</span> ready to race
+    <span class="status-badge status-red">Cancelled</span>
+</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="rd-panel text-center py-5 text-muted">
+        <div class="display-4"><i class="bi bi-people"></i></div>
+        <p class="mt-2 mb-0">Nobody has enrolled for this event yet.</p>
+    </div>
+}
+else
+{
+    <div class="rd-table table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Participant</th><th>Category</th><th>Enrolled</th><th>Enrolment</th><th>Registration</th><th>Race no. / status</th></tr></thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var reg = row.Registration;
+                    <tr>
+                        <td><strong>@row.Enrollment.ParticipantName</strong></td>
+                        <td>@row.Enrollment.CategoryName</td>
+                        <td>@row.Enrollment.EnrollmentDate.ToString("d MMM yyyy")</td>
+                        <td><span class="status-badge @Format.StatusClass(row.Enrollment.Status)">@row.Enrollment.Status</span></td>
+                        <td>
+                            @if (reg is not null)
+                            {
+                                <span class="status-badge @Format.StatusClass(reg.Status)">@reg.Status</span>
+                            }
+                            else { <span class="text-muted">-</span> }
+                        </td>
+                        <td>
+                            @if (reg is not null)
+                            {
+                                <form asp-action="UpdateRegistration" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="eventId" value="@Model.Event.EventId" />
+                                    <input type="hidden" name="userEventId" value="@reg.UserEventId" />
+                                    <input name="raceNumber" value="@reg.RaceNumber" maxlength="30" class="form-control form-control-sm" style="width:90px" placeholder="No." aria-label="Race number" />
+                                    <select name="status" class="form-select form-select-sm" style="width:130px" aria-label="Registration status">
+                                        @foreach (var s in new[] { "Registered", "Confirmed", "Cancelled" })
+                                        {
+                                            <option value="@s" selected="@(s == reg.Status)">@s</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-rd-outline" title="Save"><i class="bi bi-check2"></i></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

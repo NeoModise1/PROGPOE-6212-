@@ -1,0 +1,61 @@
+@model List<EventDto>
+@{ ViewData["Title"] = "My events"; }
+
+<div class="page-head">
+    <div>
+        <h1>My events</h1>
+        <p>Create, edit and manage the events you organise.</p>
+    </div>
+    <a class="btn btn-rd" asp-action="CreateEvent"><i class="bi bi-plus-lg"></i> New event</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="rd-panel text-center py-5">
+        <div class="display-4 text-muted"><i class="bi bi-flag"></i></div>
+        <h2 class="mt-2">No events yet</h2>
+        <p class="text-muted">Create your first event to start taking enrolments.</p>
+        <a class="btn btn-rd" asp-action="CreateEvent">Create event</a>
+    </div>
+}
+else
+{
+    <div class="rd-table table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th></th><th>Event</th><th>Date</th><th>Type</th><th>Status</th><th class="text-end">Manage</th></tr></thead>
+            <tbody>
+                @foreach (var ev in Model)
+                {
+                    <tr>
+                        <td style="width:84px">
+                            @if (!string.IsNullOrEmpty(ev.BannerUrl))
+                            {
+                                <img src="@ev.BannerUrl" alt="" style="width:72px;height:44px;object-fit:cover;border-radius:6px" />
+                            }
+                            else
+                            {
+                                <div class="event-banner-fallback" style="width:72px;height:44px;border-radius:6px;font-size:1.3rem"><i class="bi bi-lightning-charge-fill"></i></div>
+                            }
+                        </td>
+                        <td>
+                            <a asp-controller="Home" asp-action="Details" asp-route-id="@ev.EventId"><strong>@ev.EventName</strong></a>
+                            <div class="small text-muted">@ev.Venue, @ev.City</div>
+                        </td>
+                        <td>@ev.EventDate.ToString("d MMM yyyy")</td>
+                        <td>@ev.EventType@(ev.DistanceKm.HasValue ? " - " + Format.Distance(ev.DistanceKm.Value) : "")</td>
+                        <td><span class="status-badge @Format.StatusClass(ev.Status)">@ev.Status</span></td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-rd-outline" asp-action="Categories" asp-route-eventId="@ev.EventId" title="Categories"><i class="bi bi-tags"></i></a>
+                            <a class="btn btn-sm btn-rd-outline" asp-action="Enrolments" asp-route-eventId="@ev.EventId" title="Enrolments"><i class="bi bi-people"></i></a>
+                            <a class="btn btn-sm btn-rd-outline" asp-action="Results" asp-route-eventId="@ev.EventId" title="Results"><i class="bi bi-stopwatch"></i></a>
+                            <a class="btn btn-sm btn-rd-outline" asp-action="EditEvent" asp-route-id="@ev.EventId" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="DeleteEvent" asp-route-id="@ev.EventId" method="post" class="d-inline" data-confirm="Delete '@ev.EventName'? Its categories, routes and weather will be removed too.">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

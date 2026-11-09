@@ -1,0 +1,70 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "My profile";
+    var initials = string.Concat(new[] { Model.FirstName, Model.LastName }.Where(n => !string.IsNullOrEmpty(n)).Select(n => char.ToUpperInvariant(n[0])));
+}
+
+<div class="page-head">
+    <div>
+        <h1>My profile</h1>
+        <p>View and update your personal information.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="rd-panel text-center">
+            @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+            {
+                <img id="profilePreview" src="@Model.ProfilePictureUrl" alt="Profile picture" class="profile-pic mb-3" />
+            }
+            else
+            {
+                <div class="profile-pic profile-pic-initials mb-3">@initials</div>
+                <img id="profilePreview" src="" alt="Profile picture preview" class="profile-pic mb-3 d-none" />
+            }
+            <h3 class="mb-0">@Model.FirstName @Model.LastName</h3>
+            <span class="status-badge status-blue mb-3">@Model.Role</span>
+
+            <form asp-action="UploadPicture" method="post" enctype="multipart/form-data">
+                <input type="file" name="picture" class="form-control mb-2" accept="image/png,image/jpeg,image/gif,image/webp" data-preview="#profilePreview" required />
+                <div class="form-text mb-2">JPEG, PNG, GIF or WebP, up to 5 MB.</div>
+                <button type="submit" class="btn btn-rd w-100" data-busy="Uploading..."><i class="bi bi-cloud-arrow-up"></i> Upload picture</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="rd-panel">
+            <form asp-action="Profile" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                <input type="hidden" asp-for="Role" />
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label asp-for="FirstName" class="form-label"></label>
+                        <input asp-for="FirstName" class="form-control" />
+                        <span asp-validation-for="FirstName"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="LastName" class="form-label"></label>
+                        <input asp-for="LastName" class="form-control" />
+                        <span asp-validation-for="LastName"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" readonly />
+                        <div class="form-text">Your email address is your login and can't be changed here.</div>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <input asp-for="PhoneNumber" class="form-control" />
+                        <span asp-validation-for="PhoneNumber"></span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-rd mt-4" data-busy="Saving...">Save changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScripts" /> }

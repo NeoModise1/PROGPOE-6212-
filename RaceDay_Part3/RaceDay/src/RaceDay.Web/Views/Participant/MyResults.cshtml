@@ -1,0 +1,50 @@
+@model List<MyResultRow>
+@{ ViewData["Title"] = "My results"; }
+
+<div class="page-head">
+    <div>
+        <h1>My results</h1>
+        <p>Your personal race history across every event you've completed.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="rd-panel text-center py-5">
+        <div class="display-4 text-muted"><i class="bi bi-trophy"></i></div>
+        <h2 class="mt-2">No results yet</h2>
+        <p class="text-muted mb-0">Once an organiser publishes the results of an event you entered, they'll appear here.</p>
+    </div>
+}
+else
+{
+    <div class="rd-table table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Finish time</th><th>Position</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var row in Model)
+                {
+                    var r = row.Result;
+                    <tr>
+                        <td><strong>@r.EventName</strong></td>
+                        <td>@(row.EventDate.HasValue ? row.EventDate.Value.ToString("d MMM yyyy") : "-")</td>
+                        <td>@r.CategoryName</td>
+                        <td class="fw-semibold">@Format.Time(r.FinishTime)</td>
+                        <td>
+                            @if (r.Position.HasValue)
+                            {
+                                <span class="pos-chip">@Format.Ordinal(r.Position.Value)</span>
+                                @if (row.TotalFinishers.HasValue)
+                                {
+                                    <span class="text-muted"> out of @row.TotalFinishers finishers</span>
+                                }
+                            }
+                            else { <span class="text-muted">-</span> }
+                        </td>
+                        <td><span class="status-badge @Format.StatusClass(r.ResultStatus)">@r.ResultStatus</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

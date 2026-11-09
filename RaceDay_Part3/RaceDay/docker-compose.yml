@@ -1,0 +1,67 @@
+# Starts the whole RaceDay platform with one command:
+#   docker compose up --build
+#
+#   Web (MVC)   http://localhost:5090
+#   API/Swagger http://localhost:5080
+#   Azurite     http://localhost:10000   (local Azure Blob Storage emulator)
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "RaceDay_Passw0rd!"
+    ports:
+      - "14330:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck --loose
+    ports:
+      - "10000:10000"
+    volumes:
+      - blobdata:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: src/RaceDay.Api/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RaceDayDb;User Id=sa;Password=RaceDay_Passw0rd!;TrustServerCertificate=True;MultipleActiveResultSets=true"
+      # Well-known public Azurite development account. Replace with your real Azure Storage connection string for production.
+      BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      BlobStorage__ContainerName: raceday-images
+      # The browser can't resolve the "azurite" host name, so images are served from the published port.
+      BlobStorage__PublicBaseUrl: "http://localhost:10000/devstoreaccount1/raceday-images"
+    ports:
+      - "5080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: src/RaceDay.Web/Dockerfile
+    depends_on:
+      - api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Api__BaseUrl: http://api:8080
+    ports:
+      - "5090:8080"
+
+volumes:
+  sqldata:
+  blobdata:

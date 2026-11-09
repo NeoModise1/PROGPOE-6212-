@@ -1,0 +1,87 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="page-head">
+    <div>
+        <h1>Organiser dashboard</h1>
+        <p>Your events, enrolments and what's coming up.</p>
+    </div>
+    <a class="btn btn-rd" asp-action="CreateEvent"><i class="bi bi-plus-lg"></i> New event</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="stat-card"><div class="stat-label">Events created</div><div class="stat-value">@Model.TotalEvents</div></div></div>
+    <div class="col-md-4"><div class="stat-card alt"><div class="stat-label">Total enrolments</div><div class="stat-value">@Model.TotalEnrolments</div></div></div>
+    <div class="col-md-4"><div class="stat-card lime"><div class="stat-label">Upcoming events</div><div class="stat-value">@Model.Upcoming.Count</div></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <h2>Enrolments per event</h2>
+        @if (Model.Events.Count == 0)
+        {
+            <div class="rd-panel text-center py-4">
+                <p class="text-muted">You haven't created any events yet.</p>
+                <a class="btn btn-rd" asp-action="CreateEvent">Create your first event</a>
+            </div>
+        }
+        else
+        {
+            var max = Math.Max(1, Model.Events.Max(e => e.Enrolments));
+            <div class="rd-table table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Event</th><th>Date</th><th>Status</th><th style="min-width:140px">Enrolments</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var row in Model.Events.OrderByDescending(e => e.Event.EventDate))
+                        {
+                            <tr>
+                                <td><strong>@row.Event.EventName</strong><div class="small text-muted">@row.Event.City</div></td>
+                                <td>@row.Event.EventDate.ToString("d MMM yyyy")</td>
+                                <td><span class="status-badge @Format.StatusClass(row.Event.Status)">@row.Event.Status</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height:8px" role="progressbar" aria-label="Enrolments" aria-valuenow="@row.Enrolments" aria-valuemin="0" aria-valuemax="@max">
+                                            <div class="progress-bar" style="width:@(row.Enrolments * 100 / max)%;background:var(--rd-orange)"></div>
+                                        </div>
+                                        <strong>@row.Enrolments</strong>
+                                    </div>
+                                </td>
+                                <td class="text-end"><a class="btn btn-sm btn-rd-outline" asp-action="Enrolments" asp-route-eventId="@row.Event.EventId">View</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <h2>Upcoming event dates</h2>
+        @if (Model.Upcoming.Count == 0)
+        {
+            <div class="rd-panel text-muted">No upcoming events scheduled.</div>
+        }
+        else
+        {
+            <div class="rd-panel">
+                <ul class="list-unstyled mb-0">
+                    @foreach (var row in Model.Upcoming.Take(6))
+                    {
+                        var daysAway = (row.Event.EventDate.Date - DateTime.Today).Days;
+                        <li class="d-flex align-items-center gap-3 py-2 border-bottom">
+                            <div class="text-center" style="min-width:56px">
+                                <div class="stat-value" style="font-size:1.9rem">@row.Event.EventDate.ToString("dd")</div>
+                                <div class="stat-label">@row.Event.EventDate.ToString("MMM")</div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong>@row.Event.EventName</strong>
+                                <div class="small text-muted">@row.Event.City &middot; @(daysAway == 0 ? "today" : daysAway == 1 ? "tomorrow" : $"in {daysAway} days")</div>
+                            </div>
+                            <a class="btn btn-sm btn-rd-outline" asp-action="EditEvent" asp-route-id="@row.Event.EventId">Edit</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>

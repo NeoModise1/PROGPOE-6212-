@@ -1,0 +1,116 @@
+@model EventFormViewModel
+@{
+    var editing = Model.EventId.HasValue;
+    ViewData["Title"] = editing ? "Edit event" : "New event";
+    var provinces = new[] { "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape" };
+}
+
+<div class="page-head">
+    <div>
+        <h1>@(editing ? "Edit event" : "Create event")</h1>
+        <p>Fill in the details participants will see.</p>
+    </div>
+    <a class="btn btn-rd-outline" asp-action="Events">Back to my events</a>
+</div>
+
+<div class="rd-panel">
+    <form asp-action="@(editing ? "EditEvent" : "CreateEvent")" asp-route-id="@Model.EventId" method="post" enctype="multipart/form-data" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <input type="hidden" asp-for="EventId" />
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="EventName" class="form-label"></label>
+                <input asp-for="EventName" class="form-control" />
+                <span asp-validation-for="EventName"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="EventType" class="form-label"></label>
+                <select asp-for="EventType" class="form-select">
+                    @foreach (var t in EventFormViewModel.EventTypes)
+                    {
+                        <option value="@t" selected="@(t == Model.EventType)">@t</option>
+                    }
+                </select>
+                <span asp-validation-for="EventType"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description"></span>
+            </div>
+            <div class="col-md-4">
+                <label for="EventDate" class="form-label">Date</label>
+                <input type="date" id="EventDate" name="EventDate" value="@(Model.EventDate?.ToString("yyyy-MM-dd"))" class="form-control" required />
+                <span asp-validation-for="EventDate"></span>
+            </div>
+            <div class="col-md-4">
+                <label for="StartTime" class="form-label">Start time</label>
+                <input type="time" id="StartTime" name="StartTime" value="@(Model.StartTime.HasValue ? Format.ClockTime(Model.StartTime.Value) : "")" class="form-control" required />
+                <span asp-validation-for="StartTime"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="DistanceKm" class="form-label"></label>
+                <input asp-for="DistanceKm" type="number" step="0.01" min="0.01" class="form-control" />
+                <span asp-validation-for="DistanceKm"></span>
+            </div>
+            <div class="col-md-5">
+                <label asp-for="Venue" class="form-label"></label>
+                <input asp-for="Venue" class="form-control" />
+                <span asp-validation-for="Venue"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="City" class="form-label"></label>
+                <input asp-for="City" class="form-control" />
+                <span asp-validation-for="City"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Province" class="form-label"></label>
+                <input asp-for="Province" class="form-control" list="provinceList" />
+                <datalist id="provinceList">
+                    @foreach (var p in provinces) { <option value="@p"></option> }
+                </datalist>
+                <span asp-validation-for="Province"></span>
+            </div>
+
+            @if (editing)
+            {
+                <div class="col-md-4">
+                    <label asp-for="Status" class="form-label"></label>
+                    <select asp-for="Status" class="form-select">
+                        @foreach (var s in EventFormViewModel.Statuses)
+                        {
+                            <option value="@s" selected="@(s == Model.Status)">@s</option>
+                        }
+                    </select>
+                    <div class="form-text">Mark an event Completed once it has finished so results can be published.</div>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="Status" />
+            }
+
+            <div class="col-md-@(editing ? 8 : 12)">
+                <label asp-for="BannerFile" class="form-label"></label>
+                <input asp-for="BannerFile" type="file" class="form-control" accept="image/png,image/jpeg,image/gif,image/webp" data-preview="#bannerPreview" />
+                <div class="form-text">Optional. JPEG, PNG, GIF or WebP, up to 5 MB. @(editing ? "Choose a file to replace the current banner." : "")</div>
+                @if (!string.IsNullOrEmpty(Model.BannerUrl))
+                {
+                    <img id="bannerPreview" src="@Model.BannerUrl" alt="Current banner" class="banner-preview" />
+                }
+                else
+                {
+                    <img id="bannerPreview" src="" alt="Banner preview" class="banner-preview d-none" />
+                }
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-rd" data-busy="Saving...">@(editing ? "Save changes" : "Create event")</button>
+            <a class="btn btn-outline-secondary" asp-action="Events">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScripts" /> }

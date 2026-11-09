@@ -1,0 +1,82 @@
+@model ResultsEntryViewModel
+@{
+    ViewData["Title"] = "Results - " + Model.Event.EventName;
+    var concluded = Model.Event.Status == "Completed" || Model.Event.EventDate.Date <= DateTime.Today;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Results entry</h1>
+        <p><strong>@Model.Event.EventName</strong> &middot; @Model.Event.EventDate.ToString("d MMM yyyy")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-rd-outline" asp-action="Enrolments" asp-route-eventId="@Model.Event.EventId"><i class="bi bi-people"></i> Enrolments</a>
+        <a class="btn btn-rd-outline" asp-action="Events">Back</a>
+    </div>
+</div>
+
+@if (!concluded)
+{
+    <div class="alert alert-warning"><i class="bi bi-hourglass-split"></i> This event hasn't taken place yet. Results should be captured after it concludes.</div>
+}
+<p class="small text-muted">Saving a result publishes it straight away - participants see it on their My Results page. For a <strong>Completed</strong> result, enter the finish time (hh:mm:ss) and finishing position.</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="rd-panel text-center py-5 text-muted">
+        <div class="display-4"><i class="bi bi-stopwatch"></i></div>
+        <p class="mt-2 mb-0">There are no enrolled participants to capture results for.</p>
+    </div>
+}
+else
+{
+    <div class="rd-table table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Participant</th><th>Category</th><th>Result</th><th>Capture</th></tr></thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td><strong>@row.Enrollment.ParticipantName</strong></td>
+                        <td>@row.Enrollment.CategoryName</td>
+                        @if (row.Result is not null)
+                        {
+                            <td colspan="2">
+                                <span class="status-badge @Format.StatusClass(row.Result.ResultStatus)">@row.Result.ResultStatus</span>
+                                @if (row.Result.ResultStatus == "Completed")
+                                {
+                                    <span class="ms-2"><strong>@Format.Time(row.Result.FinishTime)</strong> &middot; position <span class="pos-chip">@(row.Result.Position.HasValue ? Format.Ordinal(row.Result.Position.Value) : "-")</span></span>
+                                }
+                                <span class="small text-muted ms-2"><i class="bi bi-check2-circle"></i> published</span>
+                            </td>
+                        }
+                        else
+                        {
+                            <td><span class="text-muted">Not captured</span></td>
+                            <td>
+                                <form asp-action="CaptureResult" method="post" class="row g-2 align-items-center">
+                                    <input type="hidden" name="eventId" value="@Model.Event.EventId" />
+                                    <input type="hidden" name="EnrollmentId" value="@row.Enrollment.EnrollmentId" />
+                                    <div class="col-auto">
+                                        <select name="ResultStatus" class="form-select form-select-sm" aria-label="Result status">
+                                            @foreach (var s in Model.Statuses) { <option>@s</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input name="FinishTime" class="form-control form-control-sm" style="width:100px" placeholder="hh:mm:ss" pattern="\d{1,2}:\d{2}:\d{2}" aria-label="Finish time" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <input name="Position" type="number" min="1" class="form-control form-control-sm" style="width:85px" placeholder="Pos." aria-label="Finishing position" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-sm btn-rd">Publish</button>
+                                    </div>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

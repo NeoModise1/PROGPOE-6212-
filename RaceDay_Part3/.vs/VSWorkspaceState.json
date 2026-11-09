@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\RaceDay",
+    "\\RaceDay\\.github",
+    "\\RaceDay\\database",
+    "\\RaceDay\\src",
+    "\\RaceDay\\src\\RaceDay.Api",
+    "\\RaceDay\\src\\RaceDay.Web",
+    "\\RaceDay\\tests"
+  ],
+  "SelectedNode": "\\RaceDay\\RaceDay.sln",
+  "PreviewInSolutionExplorer": false
+}

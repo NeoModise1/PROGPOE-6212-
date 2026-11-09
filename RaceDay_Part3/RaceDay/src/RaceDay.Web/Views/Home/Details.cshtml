@@ -1,0 +1,159 @@
+@model EventDetailsViewModel
+@{
+    var ev = Model.Event;
+    ViewData["Title"] = ev.EventName;
+    var me = Context.Session.GetCurrentUser();
+    var open = ev.Status == "Scheduled" || ev.Status == "Ongoing";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Events</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@ev.EventName</li>
+    </ol>
+</nav>
+
+<div class="detail-banner mb-4">
+    @if (!string.IsNullOrEmpty(ev.BannerUrl))
+    {
+        <img src="@ev.BannerUrl" alt="@ev.EventName banner" />
+    }
+    else
+    {
+        <div class="event-banner-fallback h-100"><i class="bi bi-lightning-charge-fill"></i></div>
+    }
+    <span class="event-type-chip">@ev.EventType</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="page-head mb-3">
+            <div>
+                <div class="event-date"><i class="bi bi-calendar-event"></i> @ev.EventDate.ToString("dddd, d MMMM yyyy") &middot; starts @Format.ClockTime(ev.StartTime)</div>
+                <h1>@ev.EventName</h1>
+            </div>
+            <span class="status-badge @Format.StatusClass(ev.Status)">@ev.Status</span>
+        </div>
+
+        <div class="rd-panel mb-4">
+            <h2>About this event</h2>
+            <p class="mb-3">@(string.IsNullOrWhiteSpace(ev.Description) ? "No description has been added yet." : ev.Description)</p>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-1"><i class="bi bi-geo-alt-fill text-danger"></i> <strong>Location:</strong> @ev.Location</li>
+                @if (ev.DistanceKm.HasValue)
+                {
+                    <li class="mb-1"><i class="bi bi-signpost-split text-primary"></i> <strong>Distance:</strong> @Format.Distance(ev.DistanceKm.Value)</li>
+                }
+                <li><i class="bi bi-activity text-success"></i> <strong>Type:</strong> @ev.EventType</li>
+            </ul>
+        </div>
+
+        <h2>Categories</h2>
+        @if (Model.Categories.Count == 0)
+        {
+            <div class="rd-panel text-muted">No categories have been added to this event yet.</div>
+        }
+        else
+        {
+            <div class="rd-table table-responsive mb-4">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr><th>Category</th><th>Distance</th><th>Entry fee</th><th>Spots</th><th class="text-end">Enrol</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Categories)
+                        {
+                            var enrolled = Model.EnrolledCategoryIds.Contains(c.EventCategoryId);
+                            <tr>
+                                <td><strong>@c.CategoryName</strong><div class="small text-muted">@c.ActivityType</div></td>
+                                <td>@Format.Distance(c.DistanceKm)</td>
+                                <td>@Format.Money(c.EntryFee)</td>
+                                <td>
+                                    @(c.MaximumParticipants - c.EnrolledCount > 0 ? c.MaximumParticipants - c.EnrolledCount : 0) left
+                                    <div class="small text-muted">of @c.MaximumParticipants</div>
+                                </td>
+                                <td class="text-end">
+                                    @if (me.IsParticipant)
+                                    {
+                                        if (enrolled)
+                                        {
+                                            <span class="status-badge status-green"><i class="bi bi-check2"></i> Enrolled</span>
+                                        }
+                                        else if (!open)
+                                        {
+                                            <span class="text-muted small">Closed</span>
+                                        }
+                                        else if (c.IsFull)
+                                        {
+                                            <span class="status-badge status-red">Full</span>
+                                        }
+                                        else
+                                        {
+                                            <form asp-controller="Participant" asp-action="Enrol" method="post" class="d-inline">
+                                                <input type="hidden" name="eventId" value="@ev.EventId" />
+                                                <input type="hidden" name="eventCategoryId" value="@c.EventCategoryId" />
+                                                <button type="submit" class="btn btn-rd btn-sm" data-busy="Enrolling...">Enrol</button>
+                                            </form>
+                                        }
+                                    }
+                                    else if (!me.IsAuthenticated)
+                                    {
+                                        <a class="btn btn-rd-outline btn-sm" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Home", new { id = ev.EventId })">Log in to enrol</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Participants only</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="rd-panel mb-4">
+            <h2>Route</h2>
+            @if (Model.Routes.Count == 0)
+            {
+                <p class="text-muted mb-0">Route details are not available yet.</p>
+            }
+            else
+            {
+                foreach (var r in Model.Routes)
+                {
+                    <div class="mb-3">
+                        <strong>@r.RouteName</strong>
+                        <div class="small text-muted">@Format.Distance(r.DistanceKm) &middot; @r.ElevationGain.ToString("0") m elevation gain</div>
+                        @if (!string.IsNullOrWhiteSpace(r.Description)) { <div class="small">@r.Description</div> }
+                        @if (!string.IsNullOrWhiteSpace(r.MapUrl) && Uri.TryCreate(r.MapUrl, UriKind.Absolute, out var mapUri) && (mapUri.Scheme == "https" || mapUri.Scheme == "http"))
+                        {
+                            <a href="@mapUri" target="_blank" rel="noopener noreferrer" class="small"><i class="bi bi-map"></i> View map</a>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="rd-panel">
+            <h2>Weather</h2>
+            @if (Model.Weather.Count == 0)
+            {
+                <p class="text-muted mb-0">No weather information has been recorded yet.</p>
+            }
+            else
+            {
+                var w = Model.Weather.OrderByDescending(x => x.RecordedAt).First();
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-value">@w.Temperature.ToString("0.#")&deg;C</div>
+                    <div>
+                        <div class="fw-semibold">@w.WeatherCondition</div>
+                        <div class="small text-muted"><i class="bi bi-wind"></i> @w.WindSpeed.ToString("0.#") km/h &middot; <i class="bi bi-droplet"></i> @w.Humidity.ToString("0.#")%</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
