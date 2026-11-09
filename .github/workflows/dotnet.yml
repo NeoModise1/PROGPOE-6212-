@@ -5,6 +5,7 @@ on:
     branches: [ "**" ]
   pull_request:
     branches: [ "**" ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -13,22 +14,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
+      # Finds RaceDay.sln wherever it is in the repo (repo root OR a nested
+      # folder such as RaceDay_Part3/RaceDay), so the pipeline never breaks
+      # because of how the files were uploaded.
+      - name: Locate solution folder
+        id: locate
+        shell: bash
+        run: |
+          SLN=$(find . -name "RaceDay.sln" -not -path "*/node_modules/*" | head -n 1)
+          if [ -z "$SLN" ]; then
+            echo "::error::RaceDay.sln was not found in the repository. Make sure the project files are pushed to GitHub."
+            find . -maxdepth 3 -not -path "./.git/*" | sort
+            exit 1
+          fi
+          DIR=$(dirname "$SLN")
+          echo "Solution found at: $SLN"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
       - name: Restore
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: dotnet restore RaceDay.sln
 
-      # Builds every project in the solution: RaceDay.Api (Part 2), RaceDay.Web (Part 3 MVC) and the tests.
+      # Builds every project: RaceDay.Api (Part 2), RaceDay.Web (Part 3 MVC) and the tests.
       - name: Build
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: dotnet build RaceDay.sln --configuration Release --no-restore
 
-      - name: Build MVC project
-        run: dotnet build src/RaceDay.Web/RaceDay.Web.csproj --configuration Release --no-restore
-
       - name: Run unit tests
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: dotnet test RaceDay.sln --configuration Release --no-build --verbosity normal
 
   docker-build:
@@ -38,8 +56,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Locate solution folder
+        id: locate
+        shell: bash
+        run: |
+          SLN=$(find . -name "RaceDay.sln" -not -path "*/node_modules/*" | head -n 1)
+          if [ -z "$SLN" ]; then
+            echo "::error::RaceDay.sln was not found in the repository."
+            exit 1
+          fi
+          echo "dir=$(dirname "$SLN")" >> "$GITHUB_OUTPUT"
+
       - name: Build API image
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: docker build -f src/RaceDay.Api/Dockerfile -t raceday-api .
 
       - name: Build MVC image
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: docker build -f src/RaceDay.Web/Dockerfile -t raceday-web .
