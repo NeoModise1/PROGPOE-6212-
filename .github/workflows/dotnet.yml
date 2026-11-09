@@ -19,28 +19,21 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Finds RaceDay.sln wherever it is in the repo (repo root OR a nested
-      # folder such as RaceDay_Part3/RaceDay), so the pipeline never breaks
-      # because of how the files were uploaded.
+      - name: Show repository files (for debugging)
+        run: find . -not -path "./.git/*" \( -name "Dockerfile" -o -name "RaceDay.sln" \)
+
       - name: Locate solution folder
         id: locate
         shell: bash
         run: |
-          SLN=$(find . -name "RaceDay.sln" -not -path "*/node_modules/*" | head -n 1)
-          if [ -z "$SLN" ]; then
-            echo "::error::RaceDay.sln was not found in the repository. Make sure the project files are pushed to GitHub."
-            find . -maxdepth 3 -not -path "./.git/*" | sort
-            exit 1
-          fi
-          DIR=$(dirname "$SLN")
-          echo "Solution found at: $SLN"
-          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          SLN=$(find . -name "RaceDay.sln" | head -n 1)
+          if [ -z "$SLN" ]; then echo "::error::RaceDay.sln not found"; exit 1; fi
+          echo "dir=$(dirname "$SLN")" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         working-directory: ${{ steps.locate.outputs.dir }}
         run: dotnet restore RaceDay.sln
 
-      # Builds every project: RaceDay.Api (Part 2), RaceDay.Web (Part 3 MVC) and the tests.
       - name: Build
         working-directory: ${{ steps.locate.outputs.dir }}
         run: dotnet build RaceDay.sln --configuration Release --no-restore
@@ -56,21 +49,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Locate solution folder
-        id: locate
+      - name: Build API image
         shell: bash
         run: |
-          SLN=$(find . -name "RaceDay.sln" -not -path "*/node_modules/*" | head -n 1)
-          if [ -z "$SLN" ]; then
-            echo "::error::RaceDay.sln was not found in the repository."
-            exit 1
-          fi
-          echo "dir=$(dirname "$SLN")" >> "$GITHUB_OUTPUT"
-
-      - name: Build API image
-        working-directory: ${{ steps.locate.outputs.dir }}
-        run: docker build -f src/RaceDay.Api/Dockerfile -t raceday-api .
+          DF=$(find . -path "*/src/RaceDay.Api/Dockerfile" | head -n 1)
+          if [ -z "$DF" ]; then echo "::error::API Dockerfile not found"; find . -not -path "./.git/*" | head -100; exit 1; fi
+          CTX=$(dirname "$(dirname "$(dirname "$DF")")")
+          echo "Dockerfile: $DF   Context: $CTX"
+          docker build -f "$DF" -t raceday-api "$CTX"
 
       - name: Build MVC image
-        working-directory: ${{ steps.locate.outputs.dir }}
-        run: docker build -f src/RaceDay.Web/Dockerfile -t raceday-web .
+        shell: bash
+        run: |
+          DF=$(find . -path "*/src/RaceDay.Web/Dockerfile" | head -n 1)
+          if [ -z "$DF" ]; then echo "::error::Web Dockerfile not found"; exit 1; fi
+          CTX=$(dirname "$(dirname "$(dirname "$DF")")")
+          echo "Dockerfile: $DF   Context: $CTX"
+          docker build -f "$DF" -t raceday-web "$CTX"
+          
