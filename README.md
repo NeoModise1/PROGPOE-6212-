@@ -172,7 +172,8 @@ Tests use the real API in memory (`WebApplicationFactory`) with an isolated EF C
 1. **build-and-test** - restores, builds (Release) the **whole solution (API, MVC project and tests)** and runs all tests on .NET 8.
 2. **docker-build** - builds both Docker images (API and MVC), only if job 1 passes.
 
-**CI screenshot (green build):** <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/65f285eb-a701-41d9-9c44-463e2d81d5f8" />
+**CI screenshot (green build):** <img width="701" height="253" alt="Screenshot 2026-11-09 145307" src="https://github.com/user-attachments/assets/278ef6b4-bfde-4c86-8571-6d53a665ac6a" />
+
 
 ## Repository structure
 
