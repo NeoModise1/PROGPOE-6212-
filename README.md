@@ -8,7 +8,7 @@ RaceDay is an event management system for running, walking and cycling race even
 | **Part 2 - Implementation** | ASP.NET Core 8 Web API built to the Part 1 endpoint plan and ERD, with unit tests and CI | `RaceDay/src/RaceDay.Api` |
 | **Part 3 - MVC front end** | ASP.NET Core 8 MVC web app that consumes the API, Azure Blob Storage image uploads, Docker and CI/CD | `RaceDay/src/RaceDay.Web` (plus blob storage in the API) |
 
-- **Demo video (unlisted YouTube):** _add link here_
+- **Demo video (unlisted YouTube):** https://youtu.be/Moc6l6zoZeo?si=G0gp8eTCEuF2I80E 
 - **CI (green build):** see [CI/CD](#cicd)
 
 ## Quick start - everything in one command (Docker)
